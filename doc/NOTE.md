@@ -17,7 +17,16 @@ urllib,urllib2, python对文件的操作。
 referer字段后面的地址，告诉服务器该请求是从那里来的，服务器检查这个地址是，决定是否允许这个请求。
 
 ### 代理
+>  python buildopenr 什么语法? http://www.codefrom.com/paper/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3urllib%E3%80%81urllib2%E5%8F%8Arequests
 
+>  http://www.cnblogs.com/CLTANG/archive/2011/09/15/2178163.html
+
+>  http://blog.csdn.net/pleasecallmewhy/article/details/8924889
+
+### cookie
+有些网站会在用户登录后会在本地保存cookie，方便跟踪用户浏览自己网站的历史，对于这种网站爬虫需要先登录，保存cookie，才能爬取网站内容。
+
+cookielib常用来保存cookie，实现模拟登录网站的效果。
 
 ### dumptool中的相关例程
 *dumptool中的fastquery.py, urlencode.py, urldecode.py*
@@ -26,6 +35,9 @@ referer字段后面的地址，告诉服务器该请求是从那里来的，服�
 [urllib][]
 [python I/O][]
 [http proxy][]
+[lambda][]
+
+[python cartoon][]
 
 [python I/O]:http://www.tutorialspoint.com/python/python_files_io.htm
 
@@ -33,3 +45,7 @@ referer字段后面的地址，告诉服务器该请求是从那里来的，服�
 
 
 [http proxy]: https://imququ.com/post/web-proxy.html
+
+[lambda]: http://www.diveintopython.net/power_of_introspection/lambda_functions.html
+
+[python cartoon]:https://segmentfault.com/q/1010000000179993
