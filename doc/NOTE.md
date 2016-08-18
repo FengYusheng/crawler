@@ -1,7 +1,6 @@
 >　这里记录是我的学习笔记。主要记录一些在实现这个个人作品时学到的一些知识点，主要是关于python开发爬虫用的库的使用
 
 
-# 里程碑：实现网站的用户登陆
 ## 需要的知识储备
 urllib,urllib2, python对文件的操作。
 ### `urllib`和`urllib2`
@@ -28,6 +27,15 @@ referer字段后面的地址，告诉服务器该请求是从那里来的，服�
 
 cookielib常用来保存cookie，实现模拟登录网站的效果。
 
+### 正则表达式
+python中量词默认贪婪模式。
+
+[分组与断言][]
+
+[分组与断言]: http://www.cnblogs.com/iyangyuan/archive/2013/05/30/3107390.html
+
+### 闭包
+
 ### dumptool中的相关例程
 *dumptool中的fastquery.py, urlencode.py, urldecode.py*
 
@@ -36,8 +44,13 @@ cookielib常用来保存cookie，实现模拟登录网站的效果。
 [python I/O][]
 [http proxy][]
 [lambda][]
+[csv and json][]
 
 [python cartoon][]
+
+[爬虫动态页面][]
+
+[爬虫动态页面]:http://www.jikexueyuan.com/course/1713.html
 
 [python I/O]:http://www.tutorialspoint.com/python/python_files_io.htm
 
@@ -49,3 +62,5 @@ cookielib常用来保存cookie，实现模拟登录网站的效果。
 [lambda]: http://www.diveintopython.net/power_of_introspection/lambda_functions.html
 
 [python cartoon]:https://segmentfault.com/q/1010000000179993
+
+[csv and json]:https://automatetheboringstuff.com/chapter14/
