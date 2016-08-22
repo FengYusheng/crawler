@@ -12,7 +12,6 @@ except ImportError as e:
     import urllib2
     import urllib
 
-yk_thread_args = threading.local()
 headers = {
     'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.106 Safari/537.36',
     'Referer' : 'www.youku.com'
@@ -78,7 +77,7 @@ class YK_GetCommentsInfo(object):
         return comments_id_list
 
     @staticmethod
-    def yk_getUsrInfo(comments_page, comment_id):
+    def yk_getUsrInfo(content, comment_id):
         '''
         根据comment_id，找到用户信息，
         获得的信息包括：用户名，用户特权，用户等级。
@@ -90,7 +89,7 @@ class YK_GetCommentsInfo(object):
         re_string = r'<a href="http:\\/\\/i.youku.com\\/u\\/.+?" target="_blank" id=%s name=%s\s+_hz=.*?>(.+?)<\\/a>' \
                     % (user_info_id, user_info_name)
         pattern = re.compile(re_string)
-        user_info = re.search(pattern, comments_page)
+        user_info = re.search(pattern, content)
         if user_info is None:
             user_info_dict['user_name'] = None
         else:
@@ -99,7 +98,7 @@ class YK_GetCommentsInfo(object):
         #获得用户特权信息
         re_string = r'name=%s.+?"http://vip.youku.com/" title="(.+?)"' % user_info_name
         pattern = re.compile(re_string)
-        user_info = re.search(pattern, page)
+        user_info = re.search(pattern, content)
         if user_info is None:
             user_info_dict['user_privilege'] = None
         else:
@@ -108,7 +107,7 @@ class YK_GetCommentsInfo(object):
         #获得用户等级
         re_string =r'name=%s.+?class="user-grade-icon user-grade-(lv\d+)"' % user_info_name
         pattern = re.compile(re_string)
-        user_info = re.search(re_string, page)
+        user_info = re.search(re_string, content)
         if user_info is None:
             user_info_dict['level'] = None
         else:
@@ -117,42 +116,42 @@ class YK_GetCommentsInfo(object):
         return user_info_dict
 
     @staticmethod
-    def yk_getUserComment(comments_page, comment_id, user_info_dict=None):
+    def yk_getUserComment(content, comment_id):
         '''
         获得评论内容。
         '''
         re_string = r'<div class="text" id="content_%s" name="content_%s">.+?id="content_.+?">(.+?)<' % (comment_id, comment_id)
         pattern = re.compile(re_string, re.S)
-        user_info = re.search(pattern, comments_page)
+        user_info = re.search(pattern, content)
         return user_info.group(1)
 
     @staticmethod
-    def yk_getCommentReply(comments_page, comment_id, user_info_dict):
+    def yk_getCommentReply(content, comment_id, user_info_dict):
         '''
         该评论的点赞数，回复数。
         '''
         #回复数
         re_string = r'<div class="handle" id="reply_%s">.+?data-replynum="(\d+)"' % (comment_id)
         pattern = re.compile(re_string, re.S)
-        user_info = re.search(pattern, page)
+        user_info = re.search(pattern, content)
         user_info_dict['reply_count'] = user_info.group(1)
 
         #点赞数
         re_string = r'<div class="handle" id="reply_%s">.+?<i class="ico_up"><\\/i>([\s\d]+?)<\\/a>' % (comment_id)
         pattern =re.compile(re_string, re.S)
-        user_info = re.search(pattern, page)
+        user_info = re.search(pattern, content)
         user_info_dict['up_count'] = user_info.group(1)
 
         #踩楼数
         re_string = r'<div class="handle" id="reply_%s">.+?<i class="ico_down"><\\/i>([\s\d]+?)<\\/a>' % (comment_id)
         pattern = re.compile(re_string, re.S)
-        user_info = re.search(pattern, page)
+        user_info = re.search(pattern, content)
         user_info_dict['down_count'] = user_info.group(1)
 
         #终端类型
         re_string = r'<div class="handle" id="reply_%s">.+?<em>.+?target="_blank">(.+?)<\\/a>' % comment_id
         pattern = re.compile(re_string, re.S)
-        user_info = re.search(pattern, page)
+        user_info = re.search(pattern, content)
         user_info_dict['client_type'] = user_info.group(1)
 
 class YK_Request(object):
@@ -161,20 +160,27 @@ class YK_Request(object):
     '''
     @staticmethod
     def yk_request(url):
+        attempts = 0
         response = None
         httpHandler = urllib2.HTTPHandler()
         opener = urllib2.build_opener(httpHandler)
         request = urllib2.Request(url, headers=headers)
-        try:
-            response = opener.open(request)
-        except HTTPError as e:
-            print 'http code {0} when access url : {1}'.format(e.code, url)
-        except URLError as e:
-            print 'error: {0} when access url : {1}'.format(e.reason, url)
-        except Exception as e:
-            print 'fail to access url : {0}'.format(url)
-        finally:
-            return response
+        while attempts < 10:
+            try:
+                response = opener.open(request, timeout=10)
+            except urllib2.HTTPError as e:
+                print 'http code {0} when access url : {1}'.format(e.code, url)
+                attempts += 1
+            except urllib2.URLError as e:
+                print 'error: {0} when access url : {1}'.format(e.reason, url)
+                attempts += 1
+            except Exception as e:
+                print 'fail to access url : {0}'.format(url)
+                attempts += 1
+            else:
+                break
+
+        return response
 
     @staticmethod
     def yk_getUrl(arg_dict, page = '1'):
@@ -195,26 +201,40 @@ class ThreadUrl(threading.Thread):
     def __init__(self, arg_dict, func=None):
         super(ThreadUrl, self).__init__()
         self.arg_dict = arg_dict
+        self.save_file_name = 'youku_comments/episode' + arg_dict['episode'] + '.csv'
 
     def run(self):
         '''
         如果没有指定target参数，thread默认调用run()
         '''
+        #print self.save_file_name
+        saveFile = open(self.save_file_name, 'a')
+        csvWriter = csv.DictWriter(saveFile, fieldnames=field_names)
         n = 1
         while True:
-            print self.arg_dict['episode'] + ':' + str(n)
             url = YK_Request.yk_getUrl(self.arg_dict, str(n))
             response = YK_Request.yk_request(url)
             if response is None:
                 print 'page : {0} and url : {1}'.format(n, url)
                 break
 
-            content = response.read().decode('unicode_escape')
+            content = response.read().decode('unicode_escape').encode('utf-8')
             if YK_GetCommentsInfo.yk_commentIsNone(content):
                 print 'page : {0} and url : {1}'.format(n, url)
                 break
 
+            #抓取评论内容
+            id_list = YK_GetCommentsInfo.yk_getCommmentsId(content)
+            for comment_id in id_list:
+                comment_info_dict = YK_GetCommentsInfo.yk_getUsrInfo(content, comment_id)
+                comment_info_dict['comment'] = YK_GetCommentsInfo.yk_getUserComment(content, comment_id)
+                YK_GetCommentsInfo.yk_getCommentReply(content, comment_id, comment_info_dict)
+                comment_info_dict['url'] = response.geturl()
+                #print self.arg_dict['episode'] + ':' + str(n) + self.save_file_name
+                csvWriter.writerow(comment_info_dict)
+
             n += 1
+        saveFile.close()
 
 if __name__ == '__main__':
     yk_crawler = YK_Crawler('url_args.csv')
